@@ -1,0 +1,30 @@
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local currencyGUI = script.Parent
+local currencyHolderFrame = currencyGUI:FindFirstChild("CurrencyHolder")
+local powerFrame = currencyHolderFrame:FindFirstChild("level")
+local coinsFrame = currencyHolderFrame:FindFirstChild("Coins")
+
+
+local function changeValue(name: string, amount: number)
+	if name =="level" then
+		powerFrame.Amount.Text = amount.."/50"
+	elseif name =="Coins" then
+		coinsFrame.Amount.Text = amount
+	end
+	
+end
+
+repeat wait(1) until player.leaderstats
+
+
+changeValue("level",player.leaderstats.level.Value)
+changeValue("Coins",player.leaderstats.Coins.Value)
+
+player.leaderstats.level.Changed:Connect(function()
+	changeValue("level", player.leaderstats.level.Value)
+	end)
+player.leaderstats.Coins.Changed:Connect(function()
+	changeValue("Coins", player.leaderstats.Coins.Value)
+	end)
