@@ -1,0 +1,127 @@
+local Players = game:GetService("Players")
+local DataStoreService = game:GetService("DataStoreService")
+local RunService = game:GetService("RunService")
+
+local dataStore = DataStoreService:GetDataStore("Test")
+
+local function givePlayerCurrency(player: player)
+	while true do
+		task.wait(1)
+		player.leaderstats.level.Value +=1
+		player.leaderstats.Coins.Value +=1
+	end
+end
+
+local function waitForRequestBudget(requestType)
+	local currentBudget = DataStoreService:GetRequestBudgetForRequestType(requestType)
+	while currentBudget <1 do
+		currentBudget = DataStoreService:GetRequestBudgetForRequestType(requestType)
+		task.wait(5)
+	end
+end
+
+local function setupPlayerData(player: player)
+	local userID = player.UserId
+	local key = "Player_"..userID
+
+	local leaderstats = Instance.new("Folder", player)
+	leaderstats.Name = "leaderstats"
+
+	local level = Instance.new("IntValue",leaderstats)
+	level.Name= "level"
+	level.Value = 0
+
+	local coins = Instance.new("IntValue",leaderstats)
+	coins.Name = "Coins"
+	coins.Value = 0
+
+	local success, returnValue
+	repeat
+		waitForRequestBudget(Enum.DataStoreRequestType.GetAsync)
+		success, returnValue = pcall(dataStore.GetAsync, dataStore, key)
+	until success or not Players:FindFirstChild(player.Name)
+
+	if success then
+		if returnValue == nil then
+			returnValue = {
+				level = 0,
+				Coins = 0,		
+			}	
+		end
+
+		print(returnValue)
+		level.Value = if returnValue.level ~= nil then returnValue.level else 0
+		coins.Value = if returnValue.Coins ~= nil then returnValue.Coins else 0
+
+	else
+		player:Kick("There was an error laoding your data")
+		print(player.Name.."Data loading error")
+	end
+	--givePlayerCurrency(player)
+end
+
+local function save(player)
+	local userID = player.UserId
+	local key = "Player_"..userID
+
+	local level = player.leaderstats.level.Value
+	local coins = player.leaderstats.Coins.Value
+
+	local dataTable = {
+		level = level,
+		Coins = coins,
+	}
+	print(dataTable)
+
+	local success, returnValue
+	repeat
+		waitForRequestBudget(Enum.DataStoreRequestType.UpdateAsync)
+
+		success, returnValue = pcall(dataStore.UpdateAsync, dataStore, key, function()
+
+			return dataTable
+		end)
+	until success
+
+	if success then
+		print("Data Saved!")
+	else
+		print("Data Saving ERORR")
+	end
+end
+
+local function onShutdown()
+	if RunService:IsStudio() then
+		task.wait(2)
+	else
+		local finished = Instance.new("BindableEvent")
+		local allPlayers = Players:GetPlayers()
+		local leftPlayers = #allPlayers
+
+		for _, player in ipairs(allPlayers) do
+			coroutine.wrap(function()
+				save(player)
+				leftPlayers -=1
+				if leftPlayers ==0 then 
+					finished:Fire()
+				end
+			end)()
+		end
+		finished.Event:Wait()
+	end
+end
+
+for _, player in ipairs(Players:GetPlayers())do
+	coroutine.wrap(setupPlayerData)(player)
+end
+
+Players.PlayerAdded:Connect(setupPlayerData)
+Players.PlayerRemoving:Connect(save)
+game:BindToClose(onShutdown)
+
+while true do
+	task.wait(600)
+	for _, player in ipairs(Players:GetPlayers())do
+		coroutine.wrap(save)(player)
+	end
+end
