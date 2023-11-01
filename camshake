@@ -1,0 +1,18 @@
+cam.OnClientEvent:Connect(function()
+	--local cam = workspace.CurrentCamera
+	--cam.FieldOfView +=10
+	local StartTime = tick()
+	repeat
+		wait()
+		local EndTime = tick()
+
+		local xOffset = math.random(-100,100) / 50
+		local yOffset = math.random(-100,100) / 50
+		local zOffset = math.random(-100,100) / 50
+
+		plr.Character.Humanoid.CameraOffset = Vector3.new(xOffset, yOffset, zOffset)
+
+	until EndTime - StartTime >= 0.5
+	plr.Character.Humanoid.CameraOffset = Vector3.new(0,0,0)
+	--cam.FieldOfView -=10
+end)
